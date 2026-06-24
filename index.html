@@ -1,58 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Accurate GPS Location Capture</title>
+<title>GPS Capture with Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;padding:20px}
-button{padding:12px 20px;font-size:16px;cursor:pointer}
-.card{background:#f5f5f5;padding:15px;border-radius:8px;margin-top:20px}
+body{font-family:Arial,sans-serif;max-width:900px;margin:20px auto;padding:20px}
+#map{height:400px;width:100%;margin-top:15px;border-radius:10px}
+.card{background:#f4f4f4;padding:15px;border-radius:10px;margin-top:15px}
+pre{white-space:pre-wrap}
 </style>
 </head>
 <body>
-<h2>Accurate GPS Coordinate Capture</h2>
-<p>Click the button and allow location access.</p>
-<button onclick="getLocation()">Get Current GPS Location</button>
+<h2>GPS Location Verification with Map</h2>
 
-<div class="card" id="result">Waiting for location...</div>
+<div class="card">
+<div id="status">Requesting GPS permission...</div>
+</div>
 
+<div class="card">
+<pre id="result">Waiting...</pre>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-function getLocation() {
-  const result = document.getElementById('result');
+let map;
+let marker;
 
-  if (!navigator.geolocation) {
-    result.innerHTML = "Geolocation is not supported by this browser.";
-    return;
-  }
+function initMap(lat,lng){
+    if(!map){
+        map = L.map('map').setView([lat,lng],16);
 
-  result.innerHTML = "Fetching GPS location...";
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            maxZoom:19
+        }).addTo(map);
 
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      const acc = position.coords.accuracy;
-
-      result.innerHTML = `
-        <b>Latitude:</b> ${lat}<br>
-        <b>Longitude:</b> ${lng}<br>
-        <b>Accuracy:</b> ${acc} meters<br><br>
-        <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank">
-          View on Google Maps
-        </a>
-      `;
-    },
-    function(error) {
-      result.innerHTML = "Error: " + error.message;
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 0
+        marker = L.marker([lat,lng]).addTo(map);
+    }else{
+        map.setView([lat,lng],16);
+        marker.setLatLng([lat,lng]);
     }
-  );
 }
+
+navigator.geolocation.getCurrentPosition(
+function(pos){
+
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    const data = {
+        latitude: lat,
+        longitude: lng,
+        accuracy: pos.coords.accuracy,
+        timestamp: new Date().toISOString()
+    };
+
+    document.getElementById('status').innerHTML =
+        'Location captured successfully';
+
+    document.getElementById('result').textContent =
+        JSON.stringify(data,null,2);
+
+    initMap(lat,lng);
+
+},
+function(err){
+    document.getElementById('status').innerHTML =
+        'Error: ' + err.message;
+},
+{
+    enableHighAccuracy:true,
+    timeout:30000,
+    maximumAge:0
+});
 </script>
 </body>
 </html>
